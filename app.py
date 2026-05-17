@@ -80,5 +80,7 @@ from utils.c45 import render_c45_tab
 with tab4:
     render_c45_tab()
 
+from utils.naive_bayes import render_naive_bayes_tab
+
 with tab5:
-    render_algorithm_template("Naive Bayes (Probabilistik)")
+    render_naive_bayes_tab()
