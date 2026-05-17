@@ -65,8 +65,10 @@ from utils.apriori import render_apriori_tab
 with tab1:
     render_apriori_tab()
 
+from utils.kmeans import render_kmeans_tab
+
 with tab2:
-    render_algorithm_template("K-Means (Clustering)")
+    render_kmeans_tab()
 
 with tab3:
     render_algorithm_template("Regression (Prediksi)")
