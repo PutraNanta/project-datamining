@@ -59,9 +59,11 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📊 5. Naive Bayes"
 ])
 
+from utils.apriori import render_apriori_tab
+
 # Mengisi konten masing-masing tab
 with tab1:
-    render_algorithm_template("Apriori (Association Rule)")
+    render_apriori_tab()
 
 with tab2:
     render_algorithm_template("K-Means (Clustering)")
