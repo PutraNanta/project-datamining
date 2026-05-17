@@ -72,7 +72,12 @@ def render_c45_tab():
     
     # Pemilihan target
     col_names = df_raw.columns.tolist()
-    target_col = st.selectbox("Pilih Target Class (Label yang ingin diklasifikasikan):", col_names, index=len(col_names)-1)
+    target_col = st.selectbox(
+        "Pilih Target Class (Label yang ingin diklasifikasikan):",
+        col_names,
+        index=len(col_names)-1,
+        key="c45_target_col",
+    )
     
     # Preprocessing (Encoding)
     df_processed = df_raw.copy()
@@ -112,9 +117,23 @@ def render_c45_tab():
     
     col_a, col_b = st.columns(2)
     with col_a:
-        test_size_percent = st.slider("Proporsi Data Testing (%)", min_value=10, max_value=50, value=20, step=5)
+        test_size_percent = st.slider(
+            "Proporsi Data Testing (%)",
+            min_value=10,
+            max_value=50,
+            value=20,
+            step=5,
+            key="c45_test_size_percent",
+        )
     with col_b:
-        max_depth = st.slider("Maksimal Kedalaman Pohon (Max Depth)", min_value=1, max_value=10, value=4, help="Mencegah Overfitting")
+        max_depth = st.slider(
+            "Maksimal Kedalaman Pohon (Max Depth)",
+            min_value=1,
+            max_value=10,
+            value=4,
+            help="Mencegah Overfitting",
+            key="c45_max_depth",
+        )
         
     test_size = test_size_percent / 100.0
     
