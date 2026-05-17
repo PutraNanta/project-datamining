@@ -75,8 +75,10 @@ from utils.regression import render_regression_tab
 with tab3:
     render_regression_tab()
 
+from utils.c45 import render_c45_tab
+
 with tab4:
-    render_algorithm_template("Klasifikasi C4.5 (Decision Tree)")
+    render_c45_tab()
 
 with tab5:
     render_algorithm_template("Naive Bayes (Probabilistik)")
