@@ -70,8 +70,10 @@ from utils.kmeans import render_kmeans_tab
 with tab2:
     render_kmeans_tab()
 
+from utils.regression import render_regression_tab
+
 with tab3:
-    render_algorithm_template("Regression (Prediksi)")
+    render_regression_tab()
 
 with tab4:
     render_algorithm_template("Klasifikasi C4.5 (Decision Tree)")
