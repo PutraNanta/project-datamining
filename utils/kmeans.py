@@ -3,8 +3,75 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.preprocessing import StandardScaler
-from sklearn.cluster import KMeans
+
+
+def standardize_manual(features):
+    values = features.to_numpy(dtype=float)
+    means = values.mean(axis=0)
+    stds = values.std(axis=0)
+    stds[stds == 0] = 1
+    scaled_values = (values - means) / stds
+    return scaled_values, means, stds
+
+
+def euclidean_distance(point, centroid):
+    return np.sqrt(np.sum((point - centroid) ** 2))
+
+
+def kmeans_manual(values, k, max_iter=100):
+    centroids = values[:k].copy()
+    history = []
+    labels = np.zeros(len(values), dtype=int)
+
+    for iteration in range(1, max_iter + 1):
+        distance_rows = []
+        new_labels = []
+
+        for idx, point in enumerate(values):
+            distances = [euclidean_distance(point, centroid) for centroid in centroids]
+            assigned_cluster = int(np.argmin(distances))
+            new_labels.append(assigned_cluster)
+
+            row = {"Data": idx + 1}
+            for cluster_idx, distance in enumerate(distances):
+                row[f"Jarak ke C{cluster_idx}"] = distance
+            row["Cluster Terdekat"] = assigned_cluster
+            distance_rows.append(row)
+
+        new_labels = np.array(new_labels, dtype=int)
+        new_centroids = centroids.copy()
+
+        for cluster_idx in range(k):
+            cluster_points = values[new_labels == cluster_idx]
+            if len(cluster_points) > 0:
+                new_centroids[cluster_idx] = cluster_points.mean(axis=0)
+
+        history.append({
+            "iteration": iteration,
+            "centroids_before": centroids.copy(),
+            "distances": pd.DataFrame(distance_rows),
+            "labels": new_labels.copy(),
+            "centroids_after": new_centroids.copy(),
+        })
+
+        if np.array_equal(labels, new_labels) and iteration > 1:
+            labels = new_labels
+            centroids = new_centroids
+            break
+
+        if np.allclose(centroids, new_centroids):
+            labels = new_labels
+            centroids = new_centroids
+            break
+
+        labels = new_labels
+        centroids = new_centroids
+
+    return labels, centroids, history
+
+
+def inverse_standardize_manual(scaled_values, means, stds):
+    return (scaled_values * stds) + means
 
 def render_kmeans_tab():
     st.header("Algoritma: K-Means (Clustering)")
@@ -16,6 +83,8 @@ def render_kmeans_tab():
     Konsep utama dalam K-Means:
     - **Clustering**: Proses pengelompokan data sehingga data dalam satu kelompok memiliki karakteristik yang mirip, sedangkan dengan data di kelompok lain berbeda.
     - **Centroid**: Titik pusat dari sebuah cluster. K-Means selalu berusaha mencari posisi centroid terbaik yang meminimalkan jarak titik-titik data ke centroidnya.
+    - **Penentuan Centroid Awal**: Pada aplikasi ini centroid awal dipilih dari data pertama sampai data ke-K setelah standardisasi. Cara ini dipakai agar perhitungan manual bersifat tetap/deterministik dan mudah dicek ulang.
+    - **Update Centroid**: Setelah data masuk ke cluster terdekat, centroid baru dihitung dari rata-rata setiap fitur milik seluruh data pada cluster tersebut.
     - **Jarak Euclidean (Euclidean Distance)**: Metrik pengukuran jarak garis lurus terpendek antara dua titik data. K-Means menggunakan jarak ini untuk menentukan cluster mana yang paling dekat dengan suatu titik data.
     """)
     
@@ -33,8 +102,13 @@ def render_kmeans_tab():
     
     # 3. Rumus
     st.subheader("3. Rumus")
-    st.write("Jarak Euclidean antara titik $p$ dan $q$:")
+    st.write("Standardisasi fitur:")
+    st.latex(r"z = \frac{x - \bar{x}}{\sigma}")
+    st.write("Jarak Euclidean antara titik $p$ dan centroid $c$:")
     st.latex(r"d(p, q) = \sqrt{\sum_{i=1}^{n} (q_i - p_i)^2}")
+    st.write("Update centroid:")
+    st.latex(r"C_j = \frac{\sum x_i}{n_j}")
+    st.write("Jika sebuah cluster memiliki beberapa anggota data, nilai centroid untuk setiap fitur adalah rata-rata nilai fitur tersebut pada anggota cluster.")
     st.write("Dimana $n$ adalah jumlah fitur/dimensi.")
     
     # 4. Step by step proses
@@ -43,24 +117,65 @@ def render_kmeans_tab():
     st.markdown("**A. Pengaturan Parameter**")
     k = st.slider("Jumlah Cluster (K)", min_value=2, max_value=5, value=2, step=1)
     
-    st.markdown("**B. Scaling Data (Standardization)**")
-    st.write("Karena variabel **Age** dan **Income** memiliki rentang nilai yang berbeda (puluhan vs ratusan), kita perlu menstandarkan datanya. Jika tidak, perhitungan jarak Euclidean akan didominasi oleh variabel dengan nilai yang lebih besar (Income).")
+    st.markdown("**B. Standardisasi Data Manual**")
+    st.write("Karena variabel **Age** dan **Income** memiliki rentang nilai berbeda, setiap nilai dihitung manual menjadi z-score agar jarak Euclidean tidak didominasi oleh Income.")
     
     features = df[['Age', 'Income']]
-    scaler = StandardScaler()
-    scaled_features = scaler.fit_transform(features)
+    scaled_features, feature_means, feature_stds = standardize_manual(features)
+
+    df_scale_params = pd.DataFrame({
+        "Fitur": features.columns,
+        "Mean": feature_means,
+        "Standar Deviasi": feature_stds,
+    })
+    st.write("Mean dan standar deviasi yang dipakai:")
+    st.dataframe(df_scale_params, use_container_width=True)
     
     df_scaled = pd.DataFrame(scaled_features, columns=['Age (Scaled)', 'Income (Scaled)'])
-    st.dataframe(df_scaled.head(), use_container_width=True)
+    st.write("Hasil standardisasi:")
+    st.dataframe(df_scaled, use_container_width=True)
     
-    st.markdown("**C. Proses K-Means**")
-    st.write(f"Algoritma menginisialisasi {k} titik centroid secara acak, kemudian menghitung jarak semua data ke centroid tersebut, lalu mengelompokkan data ke centroid terdekat. Posisi centroid akan terus diperbarui (digeser ke rata-rata titik di clusternya) hingga posisinya konvergen (tidak berubah lagi).")
+    st.markdown("**C. Inisialisasi Centroid Manual**")
+    st.write(f"Centroid awal diambil dari {k} data pertama agar perhitungan deterministik dan mudah diikuti.")
+    st.markdown(f"""
+    Karena nilai **K = {k}**, maka centroid awal yang digunakan adalah:
+    - **C0** = data pelanggan ke-1 setelah standardisasi.
+    - **C1** = data pelanggan ke-2 setelah standardisasi.
+    {f"- **C2** = data pelanggan ke-3 setelah standardisasi." if k >= 3 else ""}
+    {f"- **C3** = data pelanggan ke-4 setelah standardisasi." if k >= 4 else ""}
+    {f"- **C4** = data pelanggan ke-5 setelah standardisasi." if k >= 5 else ""}
+
+    Setelah semua data dihitung jaraknya ke centroid, setiap data dimasukkan ke centroid dengan jarak paling kecil.
+    Centroid berikutnya tidak dipilih lagi dari data awal, tetapi dihitung menggunakan rata-rata anggota cluster:
+    """)
+    st.latex(r"C_{cluster, fitur} = \frac{x_1 + x_2 + ... + x_n}{n}")
     
-    kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
-    kmeans.fit(scaled_features)
+    labels, centroids_scaled, iteration_history = kmeans_manual(scaled_features, k)
+    df_initial_centroids = pd.DataFrame(
+        iteration_history[0]["centroids_before"],
+        columns=['Age (Scaled)', 'Income (Scaled)']
+    )
+    df_initial_centroids.index.name = 'Centroid'
+    st.dataframe(df_initial_centroids, use_container_width=True)
+
+    st.markdown("**D. Iterasi K-Means Manual**")
+    st.write("Pada setiap iterasi, jarak setiap data ke semua centroid dihitung dengan rumus Euclidean. Data masuk ke cluster dengan jarak paling kecil, lalu centroid baru dihitung dari rata-rata data di cluster tersebut.")
+
+    for step in iteration_history:
+        with st.expander(f"Iterasi {step['iteration']}", expanded=step["iteration"] == 1):
+            st.write("Jarak setiap data ke centroid:")
+            st.dataframe(step["distances"], use_container_width=True)
+
+            df_centroid_update = pd.DataFrame(
+                step["centroids_after"],
+                columns=['Age (Scaled)', 'Income (Scaled)']
+            )
+            df_centroid_update.index.name = 'Centroid Baru'
+            st.write("Centroid baru dari rata-rata anggota cluster:")
+            st.dataframe(df_centroid_update, use_container_width=True)
     
     # Menyimpan label ke dataframe asli
-    df['Cluster'] = kmeans.labels_
+    df['Cluster'] = labels
     
     # 5. Hasil perhitungan/model
     st.subheader("5. Hasil Perhitungan & Visualisasi")
@@ -72,8 +187,8 @@ def render_kmeans_tab():
         
     with col2:
         st.write("**Posisi Centroid (Skala Asli):**")
-        # Mengembalikan titik centroid dari skala standard ke skala asli agar mudah diinterpretasikan
-        centroids_original = scaler.inverse_transform(kmeans.cluster_centers_)
+        # Mengembalikan titik centroid dari skala standar ke skala asli agar mudah diinterpretasikan.
+        centroids_original = inverse_standardize_manual(centroids_scaled, feature_means, feature_stds)
         df_centroids = pd.DataFrame(centroids_original, columns=['Age', 'Income'])
         df_centroids.index.name = 'Cluster'
         st.dataframe(df_centroids, use_container_width=True)

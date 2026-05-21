@@ -9,21 +9,12 @@ st.set_page_config(
 )
 
 # Judul Aplikasi
-st.title("📊 Aplikasi Pembelajaran Data Mining")
+st.title("Data Mining")
 st.markdown("---")
 
 # Sidebar Penjelasan Singkat
 with st.sidebar:
-    st.header("💡 Tentang Aplikasi")
-    st.write(
-        "Aplikasi ini merupakan platform interaktif untuk mempelajari "
-        "berbagai algoritma utama dalam **Data Mining**. "
-        "Setiap algoritma dijelaskan secara komprehensif mulai dari konsep, "
-        "rumus, hingga contoh perhitungannya."
-    )
-    st.write("Dibuat untuk keperluan edukasi dan eksplorasi data.")
-    st.markdown("---")
-    st.caption("© 2026 - Data Mining Project")
+    st.header("DATA MINING")
 
 # Fungsi untuk merender template struktur konten setiap tab
 def render_algorithm_template(algo_name):
@@ -51,12 +42,13 @@ def render_algorithm_template(algo_name):
     st.success("Ringkasan mengenai apa yang dapat disimpulkan dari penerapan algoritma ini pada data terkait.")
 
 # Membuat 5 tab utama dalam satu aplikasi
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+# , tab3, tab4, tab5
+tab1, tab2 = st.tabs([
     "🛒 1. Apriori", 
     "🎯 2. K-Means", 
-    "📈 3. Regression", 
-    "🌳 4. Klasifikasi C4.5", 
-    "📊 5. Naive Bayes"
+    # "📈 3. Regression", 
+    # "🌳 4. Klasifikasi C4.5", 
+    # "📊 5. Naive Bayes"
 ])
 
 from utils.apriori import render_apriori_tab
@@ -72,15 +64,15 @@ with tab2:
 
 from utils.regression import render_regression_tab
 
-with tab3:
-    render_regression_tab()
+# with tab3:
+#     render_regression_tab()
 
-from utils.c45 import render_c45_tab
+# from utils.c45 import render_c45_tab
 
-with tab4:
-    render_c45_tab()
+# with tab4:
+#     render_c45_tab()
 
-from utils.naive_bayes import render_naive_bayes_tab
+# from utils.naive_bayes import render_naive_bayes_tab
 
-with tab5:
-    render_naive_bayes_tab()
+# with tab5:
+#     render_naive_bayes_tab()
